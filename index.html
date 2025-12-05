@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisador de Sentimentos com IA</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: vertical;
+            font-size: 16px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .positive {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        .negative {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        .neutral {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+        }
+        .result h3 {
+            margin-top: 0;
+        }
+        .confidence {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Analisador de Sentimentos com IA</h1>
+        <p>Digite uma frase em português para analisar o sentimento:</p>
+        <textarea id="inputText" placeholder="Digite sua frase aqui..."></textarea>
+        <button onclick="analyzeSentiment()">Analisar Sentimento</button>
+        <div id="result" class="result">
+            <h3>Resultado da Análise</h3>
+            <p><strong>Frase:</strong> <span id="displayText"></span></p>
+            <p><strong>Sentimento:</strong> <span id="sentiment"></span></p>
+            <p><strong>Confiança:</strong> <span id="confidence"></span></p>
+        </div>
+    </div>
+
+    <script>
+        const sentiments = {
+            'POS': { emoji: '😊', text: 'POSITIVO' },
+            'NEG': { emoji: '😞', text: 'NEGATIVO' },
+            'NEU': { emoji: '😐', text: 'NEUTRO' }
+        };
+
+        async function analyzeSentiment() {
+            const inputText = document.getElementById('inputText').value.trim();
+            if (!inputText) {
+                alert('Por favor, digite uma frase para analisar.');
+                return;
+            }
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.className = 'result'; // Reset classes
+
+            try {
+                const response = await fetch('https://api-inference.huggingface.co/models/pysentimiento/bertweet-pt-sentiment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ inputs: inputText })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro na API: ' + response.status);
+                }
+
+                const data = await response.json();
+                const result = data[0];
+                const label = result.label;
+                const score = result.score;
+
+                const sentiment = sentiments[label] || { emoji: '❓', text: 'DESCONHECIDO' };
+
+                document.getElementById('displayText').textContent = inputText;
+                document.getElementById('sentiment').innerHTML = `${sentiment.emoji} ${sentiment.text}`;
+                document.getElementById('confidence').textContent = `${(score * 100).toFixed(2)}%`;
+
+                // Add class based on sentiment
+                if (label === 'POS') {
+                    resultDiv.classList.add('positive');
+                } else if (label === 'NEG') {
+                    resultDiv.classList.add('negative');
+                } else {
+                    resultDiv.classList.add('neutral');
+                }
+
+                resultDiv.classList.add('show');
+            } catch (error) {
+                alert('Erro ao analisar o sentimento: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
